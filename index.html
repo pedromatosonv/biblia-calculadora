@@ -1,0 +1,370 @@
+
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plano de Leitura da Bíblia — Calculadora de Término</title>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --panel: #121820;
+      --muted: #9db0c3;
+      --text: #e6eef6;
+      --accent: #3aa9ff;
+      --accent-2: #7bd389;
+      --danger: #ff6b6b;
+      --border: #1f2a36;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif; }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 24px; }
+    header { display: flex; align-items: start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+    header h1 { font-size: 1.4rem; margin: 0; font-weight: 700; letter-spacing: .2px; }
+    header p { margin: 6px 0 0; color: var(--muted); font-size: .95rem; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+    .grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+    .col-2 { grid-column: span 2; }
+    .col-3 { grid-column: span 3; }
+    .col-4 { grid-column: span 4; }
+    .col-6 { grid-column: span 6; }
+    label { display: block; font-size: .9rem; color: var(--muted); margin-bottom: 6px; }
+    select, input[type="number"], input[type="date"] {
+      width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+      background: #0d131a; color: var(--text); outline: none; font-size: 1rem;
+    }
+    .toggle {
+      display: inline-flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px;
+      border: 1px solid var(--border); background: #0d131a; cursor: pointer; user-select: none;
+    }
+    .toggle input { appearance: none; width: 42px; height: 24px; background: #223040; border-radius: 999px; position: relative; outline: none; transition: background .2s ease; }
+    .toggle input::after { content: ""; position: absolute; width: 18px; height: 18px; border-radius: 50%; background: #cdd9e4; top: 3px; left: 3px; transition: transform .2s ease; }
+    .toggle input:checked { background: var(--accent); }
+    .toggle input:checked::after { transform: translateX(18px); }
+    .actions { display: flex; gap: 10px; margin-top: 10px; }
+    button {
+      border: 1px solid var(--border); background: linear-gradient(180deg, #1a2430, #0e151c);
+      color: var(--text); padding: 12px 16px; border-radius: 10px; font-weight: 600; cursor: pointer; letter-spacing: .2px;
+    }
+    button.primary { background: linear-gradient(180deg, #1a2f40, #102232); border-color: #1e364a; }
+    button.primary:hover { filter: brightness(1.1); }
+    .result { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+    .chip {
+      background: #0e141b; border: 1px solid var(--border); padding: 10px 12px; border-radius: 999px; font-weight: 600;
+    }
+    .highlight { font-size: 1.4rem; font-weight: 800; color: var(--accent-2); }
+    .muted { color: var(--muted); }
+    .warning { color: var(--danger); font-weight: 600; margin-top: 8px; }
+    footer { margin-top: 20px; color: var(--muted); font-size: .9rem; }
+    @media (max-width: 720px) {
+      .grid { grid-template-columns: repeat(6, 1fr); }
+      .col-3, .col-2, .col-4 { grid-column: span 6; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Calculadora de término da leitura da Bíblia</h1>
+        <p>Informe onde você está e quantos capítulos por dia pretende ler. O app calcula a data de término.<br>
+        <span class="muted">Cânon: protestante (66 livros). Opção para excluir apenas <strong>Salmos</strong>.</span></p>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="grid">
+        <div class="col-3">
+          <label for="livro">Livro atual</label>
+          <select id="livro" aria-label="Livro atual"></select>
+        </div>
+        <div class="col-1 col-3">
+          <label for="capitulo">Capítulo atual</label>
+          <input id="capitulo" type="number" min="1" step="1" inputmode="numeric" aria-label="Capítulo atual">
+        </div>
+        <div class="col-2">
+          <label for="porDia">Capítulos por dia</label>
+          <input id="porDia" type="number" min="1" step="1" value="6" inputmode="numeric" aria-label="Capítulos por dia">
+        </div>
+        <div class="col-2">
+          <label for="inicio">Data de início</label>
+          <input id="inicio" type="date" aria-label="Data de início">
+        </div>
+        <div class="col-4" style="display:flex; align-items:end; gap:12px;">
+          <label class="toggle" title="Quando ligado, o plano pula o livro de Salmos.">
+            <input id="excluirSalmos" type="checkbox">
+            Excluir Salmos
+          </label>
+          <button id="calcular" class="primary">Calcular</button>
+          <button id="limpar">Redefinir</button>
+        </div>
+        <div class="col-6">
+          <div id="aviso" class="warning" role="alert" style="display:none;"></div>
+        </div>
+        <div class="col-6">
+          <div class="result">
+            <div class="chip">Data de término: <span id="termino" class="highlight">—</span></div>
+            <div class="chip">Dias necessários: <span id="dias">—</span></div>
+            <div class="chip">Capítulos restantes: <span id="restantes">—</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div>Obs.: As contas usam seu horário local. Se mudar a data de início, o cálculo se ajusta.</div>
+    </footer>
+  </div>
+
+  <script>
+    // Tabela dos livros (cânon protestante) com nº de capítulos
+    const BOOKS = [
+      ["Gênesis", 50],
+      ["Êxodo", 40],
+      ["Levítico", 27],
+      ["Números", 36],
+      ["Deuteronômio", 34],
+      ["Josué", 24],
+      ["Juízes", 21],
+      ["Rute", 4],
+      ["1 Samuel", 31],
+      ["2 Samuel", 24],
+      ["1 Reis", 22],
+      ["2 Reis", 25],
+      ["1 Crônicas", 29],
+      ["2 Crônicas", 36],
+      ["Esdras", 10],
+      ["Neemias", 13],
+      ["Ester", 10],
+      ["Jó", 42],
+      ["Salmos", 150],
+      ["Provérbios", 31],
+      ["Eclesiastes", 12],
+      ["Cantares", 8],
+      ["Isaías", 66],
+      ["Jeremias", 52],
+      ["Lamentações", 5],
+      ["Ezequiel", 48],
+      ["Daniel", 12],
+      ["Oséias", 14],
+      ["Joel", 3],
+      ["Amós", 9],
+      ["Obadias", 1],
+      ["Jonas", 4],
+      ["Miqueias", 7],
+      ["Naum", 3],
+      ["Habacuque", 3],
+      ["Sofonias", 3],
+      ["Ageu", 2],
+      ["Zacarias", 14],
+      ["Malaquias", 4],
+      ["Mateus", 28],
+      ["Marcos", 16],
+      ["Lucas", 24],
+      ["João", 21],
+      ["Atos", 28],
+      ["Romanos", 16],
+      ["1 Coríntios", 16],
+      ["2 Coríntios", 13],
+      ["Gálatas", 6],
+      ["Efésios", 6],
+      ["Filipenses", 4],
+      ["Colossenses", 4],
+      ["1 Tessalonicenses", 5],
+      ["2 Tessalonicenses", 3],
+      ["1 Timóteo", 6],
+      ["2 Timóteo", 4],
+      ["Tito", 3],
+      ["Filemom", 1],
+      ["Hebreus", 13],
+      ["Tiago", 5],
+      ["1 Pedro", 5],
+      ["2 Pedro", 3],
+      ["1 João", 5],
+      ["2 João", 1],
+      ["3 João", 1],
+      ["Judas", 1],
+      ["Apocalipse", 22]
+    ];
+
+    const dom = {
+      livro: document.getElementById('livro'),
+      capitulo: document.getElementById('capitulo'),
+      porDia: document.getElementById('porDia'),
+      inicio: document.getElementById('inicio'),
+      excluirSalmos: document.getElementById('excluirSalmos'),
+      calcular: document.getElementById('calcular'),
+      limpar: document.getElementById('limpar'),
+      aviso: document.getElementById('aviso'),
+      termino: document.getElementById('termino'),
+      dias: document.getElementById('dias'),
+      restantes: document.getElementById('restantes')
+    };
+
+    // Helpers de data
+    const pad2 = n => String(n).padStart(2, '0');
+    const formatBR = d => `${pad2(d.getDate())}/${pad2(d.getMonth()+1)}/${d.getFullYear()}`;
+    function addDays(base, days) {
+      const d = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+      d.setDate(d.getDate() + days);
+      return d;
+    }
+
+    // Popular livros
+    function populateBooks() {
+      BOOKS.forEach(([name], idx) => {
+        const opt = document.createElement('option');
+        opt.value = String(idx);
+        opt.textContent = name;
+        dom.livro.appendChild(opt);
+      });
+    }
+
+    // Atualiza limite do capítulo conforme livro
+    function updateChapterMax() {
+      const idx = Number(dom.livro.value);
+      const max = BOOKS[idx][1];
+      dom.capitulo.max = String(max);
+      if (!dom.capitulo.value || Number(dom.capitulo.value) < 1) {
+        dom.capitulo.value = 1;
+      }
+      if (Number(dom.capitulo.value) > max) {
+        dom.capitulo.value = max;
+      }
+    }
+
+    // Monta lista de capítulos restantes (pares [bookIndex, chapterNumber])
+    function buildRemaining(startBookIdx, startChapter, excludePsalms) {
+      const remaining = [];
+      for (let i = startBookIdx; i < BOOKS.length; i++) {
+        const [name, chCount] = BOOKS[i];
+        if (excludePsalms && name === "Salmos") {
+          continue; // pula Salmos inteiro
+        }
+        const from = (i === startBookIdx) ? startChapter : 1;
+        for (let ch = from; ch <= chCount; ch++) {
+          remaining.push([i, ch]);
+        }
+      }
+      return remaining;
+    }
+
+    // Cálculo principal
+    function calcular() {
+      dom.aviso.style.display = 'none';
+      dom.aviso.textContent = '';
+
+      const startBookIdx = Number(dom.livro.value);
+      let startChapter = Math.max(1, Math.floor(Number(dom.capitulo.value || 1)));
+      const perDay = Math.max(1, Math.floor(Number(dom.porDia.value || 1)));
+      const excludePsalms = dom.excluirSalmos.checked;
+
+      // Data de início
+      let startDate;
+      if (dom.inicio.value) {
+        const [yyyy, mm, dd] = dom.inicio.value.split('-').map(Number);
+        startDate = new Date(yyyy, mm - 1, dd);
+      } else {
+        startDate = new Date();
+      }
+
+      // Se começar em Salmos e pedir para excluir Salmos, pula para Provérbios 1
+      const isStartingInPsalms = BOOKS[startBookIdx][0] === "Salmos";
+      let effectiveBookIdx = startBookIdx;
+      if (excludePsalms && isStartingInPsalms) {
+        const proverbiosIdx = BOOKS.findIndex(b => b[0] === "Provérbios");
+        effectiveBookIdx = Math.max(proverbiosIdx, startBookIdx + 1);
+        startChapter = 1;
+        dom.aviso.textContent = "Você optou por excluir Salmos. Como o início selecionado era em Salmos, o cálculo começou em Provérbios 1.";
+        dom.aviso.style.display = 'block';
+      }
+
+      // Validação de capítulo para o livro efetivo
+      const maxCh = BOOKS[effectiveBookIdx][1];
+      if (startChapter < 1 || startChapter > maxCh) {
+        dom.aviso.textContent = `Capítulo inválido para o livro selecionado (1–${maxCh}).`;
+        dom.aviso.style.display = 'block';
+        return;
+      }
+
+      const remaining = buildRemaining(effectiveBookIdx, startChapter, excludePsalms);
+      const totalCh = remaining.length;
+      const days = Math.ceil(totalCh / perDay);
+      const endDate = addDays(startDate, Math.max(0, days - 1));
+
+      dom.termino.textContent = days > 0 ? formatBR(endDate) : "—";
+      dom.dias.textContent = String(days);
+      dom.restantes.textContent = String(totalCh);
+
+      // Persistência simples
+      const save = {
+        livro: Number(dom.livro.value),
+        capitulo: Number(dom.capitulo.value),
+        porDia: perDay,
+        inicio: dom.inicio.value || "",
+        excluirSalmos: excludePsalms
+      };
+      try { localStorage.setItem("planoBibliaState", JSON.stringify(save)); } catch {}
+    }
+
+    // Reset
+    function resetAll() {
+      const today = new Date();
+      dom.livro.value = String(BOOKS.findIndex(b => b[0] === "2 Samuel"));
+      updateChapterMax();
+      dom.capitulo.value = 8;
+      dom.porDia.value = 6;
+      dom.inicio.value = today.toISOString().slice(0,10);
+      dom.excluirSalmos.checked = false;
+      dom.termino.textContent = "—";
+      dom.dias.textContent = "—";
+      dom.restantes.textContent = "—";
+      dom.aviso.style.display = 'none';
+      dom.aviso.textContent = '';
+    }
+
+    // Init
+    function init() {
+      populateBooks();
+      // data padrão = hoje (no fuso do navegador)
+      const today = new Date();
+      dom.inicio.value = today.toISOString().slice(0, 10);
+
+      // Carregar estado salvo, se existir
+      try {
+        const raw = localStorage.getItem("planoBibliaState");
+        if (raw) {
+          const s = JSON.parse(raw);
+          if (Number.isInteger(s.livro) && s.livro >= 0 && s.livro < BOOKS.length) dom.livro.value = String(s.livro);
+          else dom.livro.value = "9"; // 2 Samuel (índice 9, 0-based)
+          updateChapterMax();
+          dom.capitulo.value = s.capitulo && s.capitulo > 0 ? s.capitulo : 8;
+          dom.porDia.value = s.porDia && s.porDia > 0 ? s.porDia : 6;
+          dom.inicio.value = s.inicio || today.toISOString().slice(0,10);
+          dom.excluirSalmos.checked = !!s.excluirSalmos;
+        } else {
+          // Default: caso do Pedro
+          dom.livro.value = String(BOOKS.findIndex(b => b[0] === "2 Samuel"));
+          updateChapterMax();
+          dom.capitulo.value = 8;
+          dom.porDia.value = 6;
+          dom.excluirSalmos.checked = false;
+        }
+      } catch {
+        dom.livro.value = String(BOOKS.findIndex(b => b[0] === "2 Samuel"));
+        updateChapterMax();
+        dom.capitulo.value = 8;
+        dom.porDia.value = 6;
+        dom.excluirSalmos.checked = false;
+      }
+
+      updateChapterMax();
+      dom.livro.addEventListener('change', updateChapterMax);
+      dom.calcular.addEventListener('click', calcular);
+      dom.limpar.addEventListener('click', resetAll);
+    }
+
+    init();
+  </script>
+</body>
+</html>
